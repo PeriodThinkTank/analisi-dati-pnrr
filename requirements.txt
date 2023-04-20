@@ -1,0 +1,6 @@
+
+geopandas===0.12.2
+numpy
+pandas
+plotly===5.14.1
+streamlit==1.21.0
