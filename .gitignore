@@ -1,0 +1,13 @@
+# notebooks folder
+/notebooks/
+
+# old files
+/old/
+
+# data
+/data/*
+!data/cig_cup_final.xlsx
+!data/limits_IT_regions.geojson
+
+# various 
+.DS_Store
