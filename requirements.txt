@@ -1,6 +1,7 @@
 
 geopandas===0.12.2
 numpy
+openpyxl
 pandas
 plotly===5.14.1
 streamlit==1.21.0
