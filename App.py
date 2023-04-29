@@ -1,5 +1,4 @@
-import geopandas as gpd
-import numpy as np
+import json
 import pandas as pd
 import plotly.graph_objects as go
 import plotly.express as px
@@ -28,22 +27,21 @@ st.markdown(
 
 ### FUNZIONI UTILI###
 @st.cache_data
-def fetch_data(path):
+def fetch_data(path:str)->pd.DataFrame:
     """
-        Raccoglie e pre-processa il dato CIG
+        Raccoglie il dato CIG
     """
     data = pd.DataFrame(pd.read_excel(path))
-    # data["MISSIONE"] = data["NOME_TEMATICA"].apply(lambda x: x[:2])
-    # data["MISSIONE_LONG"] = data["NOME_TEMATICA"].apply(lambda x: x[:4])
     return data
 
 @st.cache_data
-def fetch_geodata(path):
+def fetch_geojson(path:str)->dict:
     """
         Raccoglie e pre-processa il dato geografico per la mappatura 
     """
-    geodata = gpd.read_file(filename=path)
-    return geodata
+    with open(path, "r") as file:
+        geojson = json.load(file)
+    return geojson
 
 def convert_df(df):
     return df.to_csv().encode('utf-8')
@@ -52,13 +50,17 @@ def convert_df(df):
 ### LOADING DATA ###
 # dati CIG-CUP
 st.session_state["data"] = fetch_data(path="data/cig_cup_final.xlsx")
-st.session_state["data_unfiltered"] = st.session_state["data"]
+st.session_state["data_charts"] = st.session_state["data"]
 # geo-data
-st.session_state["geodata"] = fetch_geodata(path="data/limits_IT_regions.geojson")
+st.session_state["province"] = fetch_geojson(path="data/geojson_province_IT.json")
 
 
 ### SIDEBAR FILTRI ###
 st.sidebar.image("assets/period_logo.png", use_column_width=True)
+
+st.session_state["flag_premiali"] = st.sidebar.checkbox(
+    label="Visualizzare solo quei bandi che prevedono **Misure Premiali**?"
+)
 
 st.session_state["filtro_quota_femminile"] = st.sidebar.radio(
     label="Filtra sulla **Quota Femminile** prevista dal bando",
@@ -97,6 +99,10 @@ st.session_state["filtro_comuni"] = st.sidebar.text_input(
 
 
 ### MANIPOLAZIONE DATI ###
+## mappa ##  
+if st.session_state["flag_premiali"]:
+    st.session_state["data"] = st.session_state["data"].query("FLAG_MISURE_PREMIALI=='S'")
+
 if st.session_state.filtro_quota_femminile != "Includi tutti":
         if st.session_state.filtro_quota_femminile == "Maggiore del 30%":
             st.session_state["data"] = st.session_state["data"][st.session_state["data"].QUOTA_FEMMINILE==">30%"]
@@ -123,15 +129,32 @@ if st.session_state.filtro_missioni:
 
 st.session_state["data"] = st.session_state["data"][st.session_state["data"].IMPORTO_FINANZIATO_PCT>=st.session_state["filtro_importo_finanziato"]]
 
+## pie+bar charts##
+if st.session_state.filtro_regioni:
+    st.session_state["data_charts"] = st.session_state["data_charts"][st.session_state["data_charts"].REGIONE.isin(st.session_state["filtro_regioni"])]
+
+if st.session_state.filtro_province:
+    st.session_state["data_charts"] = st.session_state["data_charts"][st.session_state["data_charts"].PROVINCIA.isin(st.session_state["filtro_province"])]
+
+if st.session_state.filtro_comuni:
+     st.session_state["data_charts"] = st.session_state["data_charts"][st.session_state["data_charts"].COMUNE == st.session_state["filtro_comuni"].upper()]
+
+if st.session_state.filtro_missioni:
+    st.session_state["data_charts"] = st.session_state["data_charts"][st.session_state["data_charts"].MISSIONE.isin(st.session_state["filtro_missioni"])]
+
+st.session_state["data_charts"] = st.session_state["data_charts"][st.session_state["data_charts"].IMPORTO_FINANZIATO_PCT>=st.session_state["filtro_importo_finanziato"]]
+
+### FINE APPLICAZIONI FILTRI ###
+st.info(
+    f"Stai visualizzando un totale di {st.session_state.data.CIG.nunique()} CIG distribuiti su {st.session_state.data.CUP.nunique()} CUP e su {st.session_state.data.COMUNE.nunique()} Comuni", 
+    icon="ℹ️"
+)
 
 ### TABELLA FILTRATA ###
-with st.expander(f"Dati Filtrati"):
-
-    st.write(f"Dati visualizzati in questo momento: {len(st.session_state.data)} righe")
-    st.write(f"Stai visualizzando un totale di {st.session_state.data.CIG.nunique()} CIG distribuiti su {st.session_state.data.CUP.nunique()} CUP e su {st.session_state.data.COMUNE.nunique()} Comuni")
+with st.expander("Espandi per visualizzare"):
     st.dataframe(data=st.session_state["data"])
     csv = convert_df(st.session_state["data"])
-    st.download_button(label="Clicca qui per scaricare i dati secondo i filtri che hai impostato", 
+    st.download_button(label="Clicca qui per scaricare i dati secondo i filtri impostati", 
                        data=csv,
                        file_name="period_analisi_pnrr.csv",
                        mime="text/csv",
@@ -139,36 +162,35 @@ with st.expander(f"Dati Filtrati"):
                        )
 
 ### MAPPA ###
-cig_x_reg = pd.DataFrame(st.session_state["data"]['REGIONE'].value_counts())
-cig_x_reg['COUNT'] = cig_x_reg['REGIONE']
-cig_x_reg['REGIONE'] = cig_x_reg.index
-cig_x_reg['REGIONE'] = cig_x_reg['REGIONE'].map(lambda x:str.title(x))
-cig_x_reg['REGIONE'] = cig_x_reg['REGIONE'].str.replace('Trentino-Alto Adige','Trentino-Alto Adige/Südtirol')
-cig_x_reg['REGIONE'] = cig_x_reg['REGIONE'].str.replace("Valle D'Aosta","Valle d'Aosta/Vallée d'Aoste")
-st.session_state["geodata"] = pd.merge(left=st.session_state["geodata"], right=cig_x_reg, how='left', left_on='reg_name', right_on='REGIONE')
-st.session_state["geodata"].set_index(st.session_state["geodata"]['reg_name'], inplace=True)
+cig_x_prov = pd.DataFrame(st.session_state["data"]["PROVINCIA"].value_counts())
+cig_x_prov['COUNT'] = cig_x_prov['PROVINCIA']
+cig_x_prov['PROVINCIA'] = cig_x_prov.index
+cig_x_prov['PROVINCIA'] = cig_x_prov['PROVINCIA'].map(lambda x:str.title(x))
 
-with st.container(): 
-    st.subheader("Numero di Bandi - Distribuzione Regionale (dati filtrati)")
-    fig = st.session_state["geodata"].plot(
-        column="COUNT",
-        legend=True,
-        cmap='OrRd',
-        missing_kwds={'color': 'lightgrey'}
-    )
-    fig.set_axis_off()
-    st.pyplot(fig.figure, use_container_width=True)
-
+with st.container():
+    st.subheader("Numero di Bandi - Distribuzione Provinciale")
+    mappa_provinciale = px.choropleth(
+                                data_frame=cig_x_prov, 
+                                geojson=st.session_state["province"], 
+                                locations='PROVINCIA', 
+                                color='COUNT', 
+                                featureidkey='properties.prov_name', 
+                                color_continuous_scale='Reds', 
+                                range_color=(0, max(cig_x_prov['COUNT'])),
+                                labels={'COUNT':'Bandi PNRR per Provincia'}
+                                )
+    mappa_provinciale.update_layout(margin={"r": 0, "t": 0, "l": 0, "b": 0})
+    mappa_provinciale.update_geos(fitbounds="locations", visible=False)
+    mappa_provinciale.update_layout(geo=dict(bgcolor= 'rgba(0,0,0,0)'))
+    st.plotly_chart(mappa_provinciale, use_container_width=True)
 
 ### CHARTs ###
-st.subheader("Visualizzazione dei dati priva di filtri")
-
 with st.container():
     
     col1, col2 = st.columns(2)
     with col1: 
         st.write("Bandi che prevedono quote premiali")
-        temp_df = st.session_state["data_unfiltered"].query("FLAG_MISURE_PREMIALI=='S'")
+        temp_df = st.session_state["data_charts"].query("FLAG_MISURE_PREMIALI=='S'")
         df = pd.DataFrame(temp_df['REGIONE'].value_counts())
         df['COUNT'] = df['REGIONE']
         df['REGIONE'] = df.index
@@ -176,7 +198,8 @@ with st.container():
         best_reg = list(df.head(5).index)
         worst_reg = list(df.tail(5).index)
         st.plotly_chart(
-            px.pie(df, values="COUNT", names=df.index),
+            px.pie(df, values="COUNT", 
+                   names=df.index, color_discrete_sequence=px.colors.sequential.Reds),
             use_container_width=True
         )
     with col2:
@@ -185,29 +208,32 @@ with st.container():
         with tab1:
             st.plotly_chart(
                 px.bar(
-                    temp_df.query(f"REGIONE=={best_reg}")[["REGIONE", "MISSIONE"]].groupby("REGIONE")["MISSIONE"].value_counts().unstack()
-                )
+                    temp_df.query(f"REGIONE=={best_reg}")[["REGIONE", "MISSIONE"]].groupby("REGIONE")["MISSIONE"].value_counts().unstack(),
+                    color_discrete_sequence=px.colors.sequential.Reds
+                ).update_layout(xaxis={'categoryorder':'total descending'})
             )
         with tab2: 
             st.plotly_chart(
                 px.bar(
-                    temp_df.query(f"REGIONE=={worst_reg}")[["REGIONE", "MISSIONE"]].groupby("REGIONE")["MISSIONE"].value_counts().unstack()
-                )
+                    temp_df.query(f"REGIONE=={worst_reg}")[["REGIONE", "MISSIONE"]].groupby("REGIONE")["MISSIONE"].value_counts().unstack(),
+                    color_discrete_sequence=px.colors.sequential.Reds
+                ).update_layout(xaxis={'categoryorder':'total ascending'})
             )   
 
 with st.container():
     col12, col22 = st.columns(2)
     with col12: 
         st.write("Bandi che prevedono quote femminili > 30%")
-        temp_df2 = st.session_state["data_unfiltered"].query("QUOTA_FEMMINILE=='>30%'")
-        df2 = pd.DataFrame(temp_df['REGIONE'].value_counts())
+        temp_df2 = st.session_state["data_charts"].query("QUOTA_FEMMINILE=='>30%'")
+        df2 = pd.DataFrame(temp_df2['REGIONE'].value_counts())
         df2['COUNT'] = df2['REGIONE']
         df2['REGIONE'] = df2.index
         df2['REGIONE'] = df2['REGIONE'].map(lambda x:str.title(x))
         best_reg2 = list(df2.head(5).index)
         worst_reg2 = list(df2.tail(5).index)
         st.plotly_chart(
-            px.pie(df2, values="COUNT", names=df2.index),
+            px.pie(df2, values="COUNT", 
+                   names=df2.index, color_discrete_sequence=px.colors.sequential.Reds),
             use_container_width=True
         )
     with col22: 
@@ -216,29 +242,32 @@ with st.container():
         with tab12:
             st.plotly_chart(
                 px.bar(
-                    temp_df2.query(f"REGIONE=={best_reg2}")[["REGIONE", "MISSIONE"]].groupby("REGIONE")["MISSIONE"].value_counts().unstack()
-                )
+                    temp_df2.query(f"REGIONE=={best_reg2}")[["REGIONE", "MISSIONE"]].groupby("REGIONE")["MISSIONE"].value_counts().unstack(),
+                    color_discrete_sequence=px.colors.sequential.Reds
+                ).update_layout(xaxis={'categoryorder':'total descending'})
             )
         with tab22:
             st.plotly_chart(
                 px.bar(
-                    temp_df2.query(f"REGIONE=={worst_reg2}")[["REGIONE", "MISSIONE"]].groupby("REGIONE")["MISSIONE"].value_counts().unstack()
-                )
+                    temp_df2.query(f"REGIONE=={worst_reg2}")[["REGIONE", "MISSIONE"]].groupby("REGIONE")["MISSIONE"].value_counts().unstack(),
+                    color_discrete_sequence=px.colors.sequential.Reds
+                ).update_layout(xaxis={'categoryorder':'total ascending'})
             )   
 
 with st.container():
     col13, col23 = st.columns(2)
     with col13: 
         st.write("Bandi che prevedono quote giovanili > 30%")
-        temp_df3 = st.session_state["data_unfiltered"].query("QUOTA_GIOVANILE=='>30%'")
-        df3 = pd.DataFrame(temp_df['REGIONE'].value_counts())
+        temp_df3 = st.session_state["data_charts"].query("QUOTA_GIOVANILE=='>30%'")
+        df3 = pd.DataFrame(temp_df3['REGIONE'].value_counts())
         df3['COUNT'] = df3['REGIONE']
         df3['REGIONE'] = df3.index
         df3['REGIONE'] = df3['REGIONE'].map(lambda x:str.title(x))
         best_reg3 = list(df3.head(5).index)
         worst_reg3= list(df3.tail(5).index)
         st.plotly_chart(
-            px.pie(df3, values="COUNT", names=df3.index),
+            px.pie(df3, values="COUNT", 
+                   names=df3.index, color_discrete_sequence=px.colors.sequential.Reds),
             use_container_width=True
         )
     with col23: 
@@ -247,12 +276,15 @@ with st.container():
         with tab13:
             st.plotly_chart(
                 px.bar(
-                    temp_df3.query(f"REGIONE=={best_reg3}")[["REGIONE", "MISSIONE"]].groupby("REGIONE")["MISSIONE"].value_counts().unstack()
-                )
+                    temp_df3.query(f"REGIONE=={best_reg3}")[["REGIONE", "MISSIONE"]].groupby("REGIONE")["MISSIONE"].value_counts().unstack(),
+                    color_discrete_sequence=px.colors.sequential.Reds
+                ).update_layout(xaxis={'categoryorder':'total descending'})
             )
         with tab23:
             st.plotly_chart(
                 px.bar(
-                    temp_df3.query(f"REGIONE=={worst_reg3}")[["REGIONE", "MISSIONE"]].groupby("REGIONE")["MISSIONE"].value_counts().unstack()
-                )
+                    temp_df3.query(f"REGIONE=={worst_reg3}")[["REGIONE", "MISSIONE"]].groupby("REGIONE")["MISSIONE"].value_counts().unstack(),
+                    color_discrete_sequence=px.colors.sequential.Reds
+                ).update_layout(xaxis={'categoryorder':'total ascending'})
             )
+            
