@@ -6,8 +6,7 @@
 
 # data
 /data/*
-!data/cig_cup_final.xlsx
-!data/limits_IT_regions.geojson
+!data/cig_cup_final.parquet
 !data/geojson_province_IT.json
 # various 
 .DS_Store
