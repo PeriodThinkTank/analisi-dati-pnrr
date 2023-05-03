@@ -31,7 +31,7 @@ def fetch_data(path:str)->pd.DataFrame:
     """
         Raccoglie il dato CIG
     """
-    data = pd.DataFrame(pd.read_excel(path))
+    data = pd.DataFrame(pd.read_parquet(path, engine="pyarrow"))
     return data
 
 @st.cache_data
@@ -49,7 +49,7 @@ def convert_df(df):
 
 ### LOADING DATA ###
 # dati CIG-CUP
-st.session_state["data"] = fetch_data(path="data/cig_cup_final.xlsx")
+st.session_state["data"] = fetch_data(path="data/cig_cup_final.parquet")
 st.session_state["data_charts"] = st.session_state["data"]
 # geo-data
 st.session_state["province"] = fetch_geojson(path="data/geojson_province_IT.json")
@@ -62,6 +62,10 @@ st.session_state["flag_premiali"] = st.sidebar.checkbox(
     label="Visualizzare solo quei bandi che prevedono **Misure Premiali**?"
 )
 
+st.session_state["flag_urgenza"] = st.sidebar.checkbox(
+    label="Visualizzare solo quei bandi la cui realizzazione è contrassegnata come **urgente**?"
+)
+
 st.session_state["filtro_quota_femminile"] = st.sidebar.radio(
     label="Filtra sulla **Quota Femminile** prevista dal bando",
     options=("Includi tutti", "Maggiore del 30%", "Inferiore al 30%")
@@ -72,7 +76,7 @@ st.session_state["filtro_quota_giovanile"] = st.sidebar.radio(
     options=("Includi tutti", "Maggiore del 30%", "Inferiore al 30%")
 )
 st.session_state["filtro_missioni"] = st.sidebar.multiselect(
-    label="Per quali Missioni vorresti monitorare i dati PNRR?",
+    label="Per quali **Missioni** vorresti monitorare i dati PNRR?",
     options = st.session_state["data"].MISSIONE.unique()
 )
 
@@ -80,21 +84,31 @@ st.session_state["filtro_importo_finanziato"] = st.sidebar.slider(
     label="Frazione **massima** di importo finanziato (1 = 100\% di finanziamento)",
     min_value=0.00,
     max_value=1.00,
-    step = 0.05
+    step = 0.1
 )
 
 st.session_state["filtro_regioni"] = st.sidebar.multiselect(
-    label="Per quali Regioni vorresti monitorare i dati PNRR?",
+    label="Per quali **Regioni** vorresti monitorare i dati PNRR?",
     options = st.session_state["data"].REGIONE.unique()
 )
 
 st.session_state["filtro_province"] = st.sidebar.multiselect(
-    label="Per quali Province vorresti monitorare i dati PNRR?",
+    label="Per quali **Province** vorresti monitorare i dati PNRR?",
     options = st.session_state["data"].PROVINCIA.unique()
 )
 
 st.session_state["filtro_comuni"] = st.sidebar.text_input(
-    label="Puoi anche selezionare il nome del Comune di tuo interesse"
+    label="Puoi anche selezionare il nome del **Comune** di tuo interesse"
+)
+
+st.session_state["filtro_motivo_urgenza"] = st.sidebar.multiselect(
+    label="Ti interessa monitorare un **motivo di urgenza** specifico?",
+    options = st.session_state["data"].MOTIVO_URGENZA.unique()
+)
+
+st.session_state["filtro_esito"] = st.sidebar.multiselect(
+    label="Ti interessa monitorare bandi con un **esito** specifico?",
+    options = st.session_state["data"].ESITO.unique()
 )
 
 
@@ -102,6 +116,9 @@ st.session_state["filtro_comuni"] = st.sidebar.text_input(
 ## mappa ##  
 if st.session_state["flag_premiali"]:
     st.session_state["data"] = st.session_state["data"].query("FLAG_MISURE_PREMIALI=='S'")
+
+if st.session_state["flag_urgenza"]:
+    st.session_state["data"] = st.session_state["data"].query("FLAG_URGENZA==1")
 
 if st.session_state.filtro_quota_femminile != "Includi tutti":
         if st.session_state.filtro_quota_femminile == "Maggiore del 30%":
@@ -127,6 +144,12 @@ if st.session_state.filtro_comuni:
 if st.session_state.filtro_missioni:
     st.session_state["data"] = st.session_state["data"][st.session_state["data"].MISSIONE.isin(st.session_state["filtro_missioni"])]
 
+if st.session_state.filtro_motivo_urgenza:
+    st.session_state["data"] = st.session_state["data"][st.session_state["data"].MOTIVO_URGENZA.isin(st.session_state["filtro_motivo_urgenza"])]
+
+if st.session_state.filtro_esito:
+    st.session_state["data"] = st.session_state["data"][st.session_state["data"].ESITO.isin(st.session_state["filtro_esito"])]
+
 st.session_state["data"] = st.session_state["data"][st.session_state["data"].IMPORTO_FINANZIATO_PCT>=st.session_state["filtro_importo_finanziato"]]
 
 ## pie+bar charts##
@@ -141,6 +164,12 @@ if st.session_state.filtro_comuni:
 
 if st.session_state.filtro_missioni:
     st.session_state["data_charts"] = st.session_state["data_charts"][st.session_state["data_charts"].MISSIONE.isin(st.session_state["filtro_missioni"])]
+
+if st.session_state.filtro_motivo_urgenza:
+    st.session_state["data_charts"] = st.session_state["data_charts"][st.session_state["data_charts"].MOTIVO_URGENZA.isin(st.session_state["filtro_motivo_urgenza"])]
+
+if st.session_state.filtro_esito:
+    st.session_state["data_charts"] = st.session_state["data_charts"][st.session_state["data_charts"].ESITO.isin(st.session_state["filtro_esito"])]
 
 st.session_state["data_charts"] = st.session_state["data_charts"][st.session_state["data_charts"].IMPORTO_FINANZIATO_PCT>=st.session_state["filtro_importo_finanziato"]]
 
