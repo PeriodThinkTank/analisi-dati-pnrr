@@ -16,15 +16,17 @@
 - [x] FLAG_URGENZA
 - [x] MOTIVO_URGENZA
 - [x] ESITO
+- [x] importo gara (colonna importo_complessivo_gara)
+- [x] togliere il filtro sulla percentuale finanziamento
 
 ## To do - UI 
 - [ ] ALTRA PAGINA grafico con possibilità di scelta variabile master + dimensione figlia --> radar chart con tra le variabili (i) settore (ii) descrizione natura (iii) tipologia--> "altro"
 - [ ] COSA SCRIVERE nel front-end? 
-- [ ] tabella riassuntiva filtri impostati
+- [x] tabella riassuntiva filtri impostati
+- [ ] il bar chart deve dare valori % -> quanti CIG su una missione ha una regione in percentuale rispetto al numero di cig assoluto per quella regione?
 
 ## To do - Performance
-- [ ] file parquet anziché .json e .xlsx
-- [ ] drop delle colonne inutili/poco interessanti da visualizzare e scaricare
+- [x] file parquet anziché .json e .xlsx
 - [ ] verificare cosa può essere messo in cache
 
 ## Esempi domande:
