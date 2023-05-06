@@ -77,24 +77,23 @@ st.session_state["filtro_quota_giovanile"] = st.sidebar.radio(
 )
 st.session_state["filtro_missioni"] = st.sidebar.multiselect(
     label="Per quali **Missioni** vorresti monitorare i dati PNRR?",
-    options = st.session_state["data"].MISSIONE.unique()
+    options = st.session_state["data"].MISSIONE.sort_values().unique()
 )
 
-st.session_state["filtro_importo_finanziato"] = st.sidebar.slider(
-    label="Frazione **massima** di importo finanziato (1 = 100\% di finanziamento)",
-    min_value=0.00,
-    max_value=1.00,
-    step = 0.1
+st.session_state["filtro_importo_finanziato"] = st.sidebar.multiselect(
+    label="Entità dell'**importo** del singolo CIG",
+    options = ["BASSA", "MEDIA", "ALTA"],
+    help="BASSA: minore di 100.000€, MEDIA è compresa tra 100.000€ e 1.000.000€, ALTA è oltre 1.000.000.000€"
 )
 
 st.session_state["filtro_regioni"] = st.sidebar.multiselect(
     label="Per quali **Regioni** vorresti monitorare i dati PNRR?",
-    options = st.session_state["data"].REGIONE.unique()
+    options = st.session_state["data"].REGIONE.sort_values().unique()
 )
 
 st.session_state["filtro_province"] = st.sidebar.multiselect(
     label="Per quali **Province** vorresti monitorare i dati PNRR?",
-    options = st.session_state["data"].PROVINCIA.unique()
+    options = st.session_state["data"].PROVINCIA.sort_values().unique()
 )
 
 st.session_state["filtro_comuni"] = st.sidebar.text_input(
@@ -103,12 +102,12 @@ st.session_state["filtro_comuni"] = st.sidebar.text_input(
 
 st.session_state["filtro_motivo_urgenza"] = st.sidebar.multiselect(
     label="Ti interessa monitorare un **motivo di urgenza** specifico?",
-    options = st.session_state["data"].MOTIVO_URGENZA.unique()
+    options = st.session_state["data"].MOTIVO_URGENZA.sort_values().unique()
 )
 
 st.session_state["filtro_esito"] = st.sidebar.multiselect(
     label="Ti interessa monitorare bandi con un **esito** specifico?",
-    options = st.session_state["data"].ESITO.unique()
+    options = st.session_state["data"].ESITO.sort_values().unique()
 )
 
 
@@ -150,7 +149,9 @@ if st.session_state.filtro_motivo_urgenza:
 if st.session_state.filtro_esito:
     st.session_state["data"] = st.session_state["data"][st.session_state["data"].ESITO.isin(st.session_state["filtro_esito"])]
 
-st.session_state["data"] = st.session_state["data"][st.session_state["data"].IMPORTO_FINANZIATO_PCT>=st.session_state["filtro_importo_finanziato"]]
+if st.session_state.filtro_importo_finanziato:
+    st.session_state["data"] = st.session_state["data"][st.session_state["data"].CLASSE_IMPORTO.isin(st.session_state["filtro_importo_finanziato"])]
+
 
 ## pie+bar charts##
 if st.session_state.filtro_regioni:
@@ -171,7 +172,9 @@ if st.session_state.filtro_motivo_urgenza:
 if st.session_state.filtro_esito:
     st.session_state["data_charts"] = st.session_state["data_charts"][st.session_state["data_charts"].ESITO.isin(st.session_state["filtro_esito"])]
 
-st.session_state["data_charts"] = st.session_state["data_charts"][st.session_state["data_charts"].IMPORTO_FINANZIATO_PCT>=st.session_state["filtro_importo_finanziato"]]
+if st.session_state.filtro_importo_finanziato:
+    st.session_state["data_charts"] = st.session_state["data_charts"][st.session_state["data_charts"].CLASSE_IMPORTO.isin(st.session_state["filtro_importo_finanziato"])]
+
 
 ### FINE APPLICAZIONI FILTRI ###
 st.info(
@@ -180,7 +183,7 @@ st.info(
 )
 
 ### TABELLA FILTRATA ###
-with st.expander("Espandi per visualizzare"):
+with st.expander("Espandi per visualizzare i dati filtrati"):
     st.dataframe(data=st.session_state["data"])
     csv = convert_df(st.session_state["data"])
     st.download_button(label="Clicca qui per scaricare i dati secondo i filtri impostati", 
@@ -204,7 +207,7 @@ with st.container():
                                 locations='PROVINCIA', 
                                 color='COUNT', 
                                 featureidkey='properties.prov_name', 
-                                color_continuous_scale='Reds', 
+                                color_continuous_scale='PurD', 
                                 range_color=(0, max(cig_x_prov['COUNT'])),
                                 labels={'COUNT':'Bandi PNRR per Provincia'}
                                 )
@@ -228,7 +231,7 @@ with st.container():
         worst_reg = list(df.tail(5).index)
         st.plotly_chart(
             px.pie(df, values="COUNT", 
-                   names=df.index, color_discrete_sequence=px.colors.sequential.Reds),
+                   names=df.index, color_discrete_sequence=px.colors.sequential.PuRd),
             use_container_width=True
         )
     with col2:
@@ -238,14 +241,14 @@ with st.container():
             st.plotly_chart(
                 px.bar(
                     temp_df.query(f"REGIONE=={best_reg}")[["REGIONE", "MISSIONE"]].groupby("REGIONE")["MISSIONE"].value_counts().unstack(),
-                    color_discrete_sequence=px.colors.sequential.Reds
+                    color_discrete_sequence=px.colors.sequential.PuRd
                 ).update_layout(xaxis={'categoryorder':'total descending'})
             )
         with tab2: 
             st.plotly_chart(
                 px.bar(
                     temp_df.query(f"REGIONE=={worst_reg}")[["REGIONE", "MISSIONE"]].groupby("REGIONE")["MISSIONE"].value_counts().unstack(),
-                    color_discrete_sequence=px.colors.sequential.Reds
+                    color_discrete_sequence=px.colors.sequential.PuRd
                 ).update_layout(xaxis={'categoryorder':'total ascending'})
             )   
 
@@ -262,7 +265,7 @@ with st.container():
         worst_reg2 = list(df2.tail(5).index)
         st.plotly_chart(
             px.pie(df2, values="COUNT", 
-                   names=df2.index, color_discrete_sequence=px.colors.sequential.Reds),
+                   names=df2.index, color_discrete_sequence=px.colors.sequential.PuRd),
             use_container_width=True
         )
     with col22: 
@@ -272,14 +275,14 @@ with st.container():
             st.plotly_chart(
                 px.bar(
                     temp_df2.query(f"REGIONE=={best_reg2}")[["REGIONE", "MISSIONE"]].groupby("REGIONE")["MISSIONE"].value_counts().unstack(),
-                    color_discrete_sequence=px.colors.sequential.Reds
+                    color_discrete_sequence=px.colors.sequential.PuRd
                 ).update_layout(xaxis={'categoryorder':'total descending'})
             )
         with tab22:
             st.plotly_chart(
                 px.bar(
                     temp_df2.query(f"REGIONE=={worst_reg2}")[["REGIONE", "MISSIONE"]].groupby("REGIONE")["MISSIONE"].value_counts().unstack(),
-                    color_discrete_sequence=px.colors.sequential.Reds
+                    color_discrete_sequence=px.colors.sequential.PuRd
                 ).update_layout(xaxis={'categoryorder':'total ascending'})
             )   
 
@@ -296,7 +299,7 @@ with st.container():
         worst_reg3= list(df3.tail(5).index)
         st.plotly_chart(
             px.pie(df3, values="COUNT", 
-                   names=df3.index, color_discrete_sequence=px.colors.sequential.Reds),
+                   names=df3.index, color_discrete_sequence=px.colors.sequential.PuRd),
             use_container_width=True
         )
     with col23: 
@@ -306,14 +309,35 @@ with st.container():
             st.plotly_chart(
                 px.bar(
                     temp_df3.query(f"REGIONE=={best_reg3}")[["REGIONE", "MISSIONE"]].groupby("REGIONE")["MISSIONE"].value_counts().unstack(),
-                    color_discrete_sequence=px.colors.sequential.Reds
+                    color_discrete_sequence=px.colors.sequential.PuRd
                 ).update_layout(xaxis={'categoryorder':'total descending'})
             )
         with tab23:
             st.plotly_chart(
                 px.bar(
                     temp_df3.query(f"REGIONE=={worst_reg3}")[["REGIONE", "MISSIONE"]].groupby("REGIONE")["MISSIONE"].value_counts().unstack(),
-                    color_discrete_sequence=px.colors.sequential.Reds
+                    color_discrete_sequence=px.colors.sequential.PuRd
                 ).update_layout(xaxis={'categoryorder':'total ascending'})
             )
+
+
+# Set up the filters and store them in st.session_state["filter"]
+st.session_state["filters"] = {
+                            "flag_premiali":st.session_state["flag_premiali"],
+                            "flag_urgenza":st.session_state["flag_urgenza"],
+                            "filtro_quota_femminile":st.session_state["filtro_quota_femminile"],
+                            "filtro_quota_giovanile":st.session_state["filtro_quota_giovanile"],
+                            "filtro_missioni":st.session_state["filtro_missioni"],
+                            "filtro_importo":st.session_state["filtro_importo_finanziato"],
+                            "filtro_regioni":st.session_state["filtro_regioni"], 
+                            "filtro_province":st.session_state["filtro_province"],
+                            "filtro_comuni":st.session_state["filtro_comuni"],
+                            "filtro_motivo_urgenza":st.session_state["filtro_motivo_urgenza"],
+                            "filtro_esito":st.session_state["filtro_esito"]
+}
+
+# Display a table with the filters and their values
+with st.expander("Espandi per visualizzare un riassunto dei filtri selezionati"):
+    filter_df = pd.DataFrame.from_dict(st.session_state["filters"], orient="index", columns=["Value"])
+    st.dataframe(data=filter_df)
             
