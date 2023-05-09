@@ -194,8 +194,7 @@ with st.expander("Espandi per visualizzare i dati filtrati"):
                        )
 
 ### MAPPA ###
-cig_x_prov = pd.DataFrame(st.session_state["data"]["PROVINCIA"].value_counts())
-cig_x_prov['COUNT'] = cig_x_prov['PROVINCIA']
+cig_x_prov = pd.DataFrame(st.session_state["data"][["CIG","PROVINCIA"]].groupby(['PROVINCIA'])['CIG'].nunique())
 cig_x_prov['PROVINCIA'] = cig_x_prov.index
 cig_x_prov['PROVINCIA'] = cig_x_prov['PROVINCIA'].map(lambda x:str.title(x))
 
@@ -205,10 +204,10 @@ with st.container():
                                 data_frame=cig_x_prov, 
                                 geojson=st.session_state["province"], 
                                 locations='PROVINCIA', 
-                                color='COUNT', 
+                                color='CIG', 
                                 featureidkey='properties.prov_name', 
                                 color_continuous_scale='PurD', 
-                                range_color=(0, max(cig_x_prov['COUNT'])),
+                                range_color=(0, max(cig_x_prov['CIG'])),
                                 labels={'COUNT':'Bandi PNRR per Provincia'}
                                 )
     mappa_provinciale.update_layout(margin={"r": 0, "t": 0, "l": 0, "b": 0})
@@ -216,128 +215,140 @@ with st.container():
     mappa_provinciale.update_layout(geo=dict(bgcolor= 'rgba(0,0,0,0)'))
     st.plotly_chart(mappa_provinciale, use_container_width=True)
 
-### CHARTs ###
+### DIVISIONE REGIONI/MISSIONI
+full_count = pd.DataFrame(st.session_state.data_charts[["CIG","REGIONE","MISSIONE"]].groupby(["REGIONE", "MISSIONE"])["CIG"].nunique())
+full_count.columns = ["NUMERO_CIG"]
+full_count['PCT_CIG_MISSIONE_REGIONE'] = full_count['NUMERO_CIG'] / full_count.groupby('REGIONE')['NUMERO_CIG'].transform('sum') * 100
+full_count['PCT_CIG_MISSIONE_REGIONE'] = full_count['PCT_CIG_MISSIONE_REGIONE'].apply(lambda x: f'{x:.2f}%')
+
+### GRAFICI ###
 with st.container():
     
     col1, col2 = st.columns(2)
     with col1: 
         st.write("Bandi che prevedono quote premiali")
-        temp_df = st.session_state["data_charts"].query("FLAG_MISURE_PREMIALI=='S'")
-        df = pd.DataFrame(temp_df['REGIONE'].value_counts())
-        df['COUNT'] = df['REGIONE']
-        df['REGIONE'] = df.index
-        df['REGIONE'] = df['REGIONE'].map(lambda x:str.title(x))
-        best_reg = list(df.head(5).index)
-        worst_reg = list(df.tail(5).index)
+        temp_df = st.session_state["data_charts"].query("FLAG_MISURE_PREMIALI=='S'")[["CIG","REGIONE","MISSIONE"]]
+        counts = pd.DataFrame(temp_df[["CIG","REGIONE"]].groupby(['REGIONE'])['CIG'].nunique())
         st.plotly_chart(
-            px.pie(df, values="COUNT", 
-                   names=df.index, color_discrete_sequence=px.colors.sequential.PuRd),
+            px.pie(counts, 
+                   values="CIG", 
+                   names=counts.index, 
+                   color_discrete_sequence=px.colors.sequential.PuRd
+                   ),
             use_container_width=True
         )
     with col2:
         st.write("Regioni e numero di bandi con premialità") 
-        tab1, tab2 = st.tabs(["Migliori", "Peggiori"])
-        with tab1:
-            st.plotly_chart(
-                px.bar(
-                    temp_df.query(f"REGIONE=={best_reg}")[["REGIONE", "MISSIONE"]].groupby("REGIONE")["MISSIONE"].value_counts().unstack(),
-                    color_discrete_sequence=px.colors.sequential.PuRd
-                ).update_layout(xaxis={'categoryorder':'total descending'})
-            )
-        with tab2: 
-            st.plotly_chart(
-                px.bar(
-                    temp_df.query(f"REGIONE=={worst_reg}")[["REGIONE", "MISSIONE"]].groupby("REGIONE")["MISSIONE"].value_counts().unstack(),
-                    color_discrete_sequence=px.colors.sequential.PuRd
-                ).update_layout(xaxis={'categoryorder':'total ascending'})
-            )   
+        regioni_filtered = pd.DataFrame(temp_df.groupby(["REGIONE", "MISSIONE"])["CIG"].nunique())
+        regioni_filtered.columns = ["CIG_FILTRATI"]
+        regioni_filtered['PCT_CIG_FILT_MISS_REG'] = regioni_filtered['CIG_FILTRATI'] / regioni_filtered.groupby('REGIONE')['CIG_FILTRATI'].transform('sum') * 100
+        regioni_filtered['PCT_CIG_FILT_MISS_REG'] = regioni_filtered['PCT_CIG_FILT_MISS_REG'].apply(lambda x: f'{x:.2f}%')
+        regioni_recap = pd.merge(full_count, regioni_filtered, left_index=True, right_index=True, how="outer")
+        regioni_recap["PRESENCE_ON_TOTAL_CIGS"] = round((regioni_recap["CIG_FILTRATI"] / regioni_recap["NUMERO_CIG"])*100)
+        fig = px.bar(
+            regioni_recap.reset_index(), 
+            x="REGIONE", y="CIG_FILTRATI", 
+            color="MISSIONE",
+            color_discrete_sequence=px.colors.sequential.PuRd,
+            hover_data=["PRESENCE_ON_TOTAL_CIGS"]
+        )
+        fig.update_layout(xaxis={'categoryorder':'total descending'})
+        fig.update_traces(hovertemplate=
+                        'Numero di CIG (filtrati) per Missione nella Regione: %{y} <br>'+
+                        'Percentuale rispetto al totale dei CIG per Missione nella Regione: %{customdata}%'
+                        )
+        st.plotly_chart(fig)
+
 
 with st.container():
     col12, col22 = st.columns(2)
     with col12: 
         st.write("Bandi che prevedono quote femminili > 30%")
-        temp_df2 = st.session_state["data_charts"].query("QUOTA_FEMMINILE=='>30%'")
-        df2 = pd.DataFrame(temp_df2['REGIONE'].value_counts())
-        df2['COUNT'] = df2['REGIONE']
-        df2['REGIONE'] = df2.index
-        df2['REGIONE'] = df2['REGIONE'].map(lambda x:str.title(x))
-        best_reg2 = list(df2.head(5).index)
-        worst_reg2 = list(df2.tail(5).index)
+        temp_df2 = st.session_state["data_charts"].query("QUOTA_FEMMINILE=='>30%'")[["CIG","REGIONE","MISSIONE"]]
+        counts2 = pd.DataFrame(temp_df2[["CIG","REGIONE"]].groupby(['REGIONE'])['CIG'].nunique())
         st.plotly_chart(
-            px.pie(df2, values="COUNT", 
-                   names=df2.index, color_discrete_sequence=px.colors.sequential.PuRd),
+            px.pie(counts2, 
+                   values="CIG", 
+                   names=counts2.index, 
+                   color_discrete_sequence=px.colors.sequential.PuRd
+                   ),
             use_container_width=True
         )
     with col22: 
         st.write("Regioni e bandi con quota femminile > 30%") 
-        tab12, tab22 = st.tabs(["Migliori", "Peggiori"])
-        with tab12:
-            st.plotly_chart(
-                px.bar(
-                    temp_df2.query(f"REGIONE=={best_reg2}")[["REGIONE", "MISSIONE"]].groupby("REGIONE")["MISSIONE"].value_counts().unstack(),
-                    color_discrete_sequence=px.colors.sequential.PuRd
-                ).update_layout(xaxis={'categoryorder':'total descending'})
-            )
-        with tab22:
-            st.plotly_chart(
-                px.bar(
-                    temp_df2.query(f"REGIONE=={worst_reg2}")[["REGIONE", "MISSIONE"]].groupby("REGIONE")["MISSIONE"].value_counts().unstack(),
-                    color_discrete_sequence=px.colors.sequential.PuRd
-                ).update_layout(xaxis={'categoryorder':'total ascending'})
-            )   
+        regioni_filtered2 = pd.DataFrame(temp_df2.groupby(["REGIONE", "MISSIONE"])["CIG"].nunique())
+        regioni_filtered2.columns = ["CIG_FILTRATI"]
+        regioni_filtered2['PCT_CIG_FILT_MISS_REG'] = regioni_filtered2['CIG_FILTRATI'] / regioni_filtered2.groupby('REGIONE')['CIG_FILTRATI'].transform('sum') * 100
+        regioni_filtered2['PCT_CIG_FILT_MISS_REG'] = regioni_filtered2['PCT_CIG_FILT_MISS_REG'].apply(lambda x: f'{x:.2f}%')
+        regioni_recap2 = pd.merge(full_count, regioni_filtered2, left_index=True, right_index=True, how="outer")
+        regioni_recap2["PRESENCE_ON_TOTAL_CIGS"] = round((regioni_recap2["CIG_FILTRATI"] / regioni_recap2["NUMERO_CIG"])*100)
+        fig2 = px.bar(
+            regioni_recap2.reset_index(), 
+            x="REGIONE", y="CIG_FILTRATI", 
+            color="MISSIONE",
+            color_discrete_sequence=px.colors.sequential.PuRd,
+            hover_data=["PRESENCE_ON_TOTAL_CIGS"]
+        )
+        fig2.update_layout(xaxis={'categoryorder':'total descending'})
+        fig2.update_traces(hovertemplate=
+                        'Numero di CIG (filtrati) per Missione nella Regione: %{y} <br>'+
+                        'Percentuale rispetto al totale dei CIG per Missione nella Regione: %{customdata}%'
+                        )
+        st.plotly_chart(fig2)
 
 with st.container():
     col13, col23 = st.columns(2)
     with col13: 
         st.write("Bandi che prevedono quote giovanili > 30%")
-        temp_df3 = st.session_state["data_charts"].query("QUOTA_GIOVANILE=='>30%'")
-        df3 = pd.DataFrame(temp_df3['REGIONE'].value_counts())
-        df3['COUNT'] = df3['REGIONE']
-        df3['REGIONE'] = df3.index
-        df3['REGIONE'] = df3['REGIONE'].map(lambda x:str.title(x))
-        best_reg3 = list(df3.head(5).index)
-        worst_reg3= list(df3.tail(5).index)
+        temp_df3 = st.session_state["data_charts"].query("QUOTA_GIOVANILE=='>30%'")[["CIG","REGIONE","MISSIONE"]]
+        counts3 = pd.DataFrame(temp_df3[["CIG","REGIONE"]].groupby(['REGIONE'])['CIG'].nunique())
         st.plotly_chart(
-            px.pie(df3, values="COUNT", 
-                   names=df3.index, color_discrete_sequence=px.colors.sequential.PuRd),
+            px.pie(counts3, 
+                   values="CIG", 
+                   names=counts3.index, 
+                   color_discrete_sequence=px.colors.sequential.PuRd
+                   ),
             use_container_width=True
         )
     with col23: 
         st.write("Regioni e bandi con quota giovanile > 30%") 
-        tab13, tab23 = st.tabs(["Migliori", "Peggiori"])
-        with tab13:
-            st.plotly_chart(
-                px.bar(
-                    temp_df3.query(f"REGIONE=={best_reg3}")[["REGIONE", "MISSIONE"]].groupby("REGIONE")["MISSIONE"].value_counts().unstack(),
-                    color_discrete_sequence=px.colors.sequential.PuRd
-                ).update_layout(xaxis={'categoryorder':'total descending'})
-            )
-        with tab23:
-            st.plotly_chart(
-                px.bar(
-                    temp_df3.query(f"REGIONE=={worst_reg3}")[["REGIONE", "MISSIONE"]].groupby("REGIONE")["MISSIONE"].value_counts().unstack(),
-                    color_discrete_sequence=px.colors.sequential.PuRd
-                ).update_layout(xaxis={'categoryorder':'total ascending'})
-            )
+        regioni_filtered3 = pd.DataFrame(temp_df3.groupby(["REGIONE", "MISSIONE"])["CIG"].nunique())
+        regioni_filtered3.columns = ["CIG_FILTRATI"]
+        regioni_filtered3['PCT_CIG_FILT_MISS_REG'] = regioni_filtered3['CIG_FILTRATI'] / regioni_filtered3.groupby('REGIONE')['CIG_FILTRATI'].transform('sum') * 100
+        regioni_filtered3['PCT_CIG_FILT_MISS_REG'] = regioni_filtered3['PCT_CIG_FILT_MISS_REG'].apply(lambda x: f'{x:.2f}%')
+        regioni_recap3 = pd.merge(full_count, regioni_filtered3, left_index=True, right_index=True, how="outer")
+        regioni_recap3["PRESENCE_ON_TOTAL_CIGS"] = round((regioni_recap3["CIG_FILTRATI"] / regioni_recap3["NUMERO_CIG"])*100)
+        fig3 = px.bar(
+            regioni_recap3.reset_index(), 
+            x="REGIONE", y="CIG_FILTRATI", 
+            color="MISSIONE",
+            color_discrete_sequence=px.colors.sequential.PuRd,
+            hover_data=["PRESENCE_ON_TOTAL_CIGS"]
+        )
+        fig3.update_layout(xaxis={'categoryorder':'total descending'})
+        fig3.update_traces(hovertemplate=
+                        'Numero di CIG (filtrati) per Missione nella Regione: %{y} <br>'+
+                        'Percentuale rispetto al totale dei CIG per Missione nella Regione: %{customdata}%'
+                        )
+        st.plotly_chart(fig3)
 
 
-# Set up the filters and store them in st.session_state["filter"]
+### RECAP FILTRI IMPOSTATI
 st.session_state["filters"] = {
-                            "flag_premiali":st.session_state["flag_premiali"],
-                            "flag_urgenza":st.session_state["flag_urgenza"],
-                            "filtro_quota_femminile":st.session_state["filtro_quota_femminile"],
-                            "filtro_quota_giovanile":st.session_state["filtro_quota_giovanile"],
-                            "filtro_missioni":st.session_state["filtro_missioni"],
-                            "filtro_importo":st.session_state["filtro_importo_finanziato"],
-                            "filtro_regioni":st.session_state["filtro_regioni"], 
-                            "filtro_province":st.session_state["filtro_province"],
-                            "filtro_comuni":st.session_state["filtro_comuni"],
-                            "filtro_motivo_urgenza":st.session_state["filtro_motivo_urgenza"],
-                            "filtro_esito":st.session_state["filtro_esito"]
+                        "flag_premiali":st.session_state["flag_premiali"],
+                        "flag_urgenza":st.session_state["flag_urgenza"],
+                        "filtro_quota_femminile":st.session_state["filtro_quota_femminile"],
+                        "filtro_quota_giovanile":st.session_state["filtro_quota_giovanile"],
+                        "filtro_missioni":st.session_state["filtro_missioni"],
+                        "filtro_importo":st.session_state["filtro_importo_finanziato"],
+                        "filtro_regioni":st.session_state["filtro_regioni"], 
+                        "filtro_province":st.session_state["filtro_province"],
+                        "filtro_comuni":st.session_state["filtro_comuni"],
+                        "filtro_motivo_urgenza":st.session_state["filtro_motivo_urgenza"],
+                        "filtro_esito":st.session_state["filtro_esito"]
 }
 
-# Display a table with the filters and their values
 with st.expander("Espandi per visualizzare un riassunto dei filtri selezionati"):
     filter_df = pd.DataFrame.from_dict(st.session_state["filters"], orient="index", columns=["Value"])
-    st.dataframe(data=filter_df)
+    st.dataframe(data=filter_df, use_container_width=True)
             
