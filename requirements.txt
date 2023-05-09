@@ -1,5 +1,5 @@
-json
-matplotlib
+#json
+#matplotlib
 numpy
 openpyxl
 pandas
