@@ -10,20 +10,13 @@
 * importo lavori? vs finanziamento?
 * totale CIG e totale CUP (bisogna andare in distinct?)
 
-## URGENTE
-**COUNT DISTINCT** su tutti i grafici che esibisci.
-## filtri da inserire
-- [x] FLAG_URGENZA
-- [x] MOTIVO_URGENZA
-- [x] ESITO
-- [x] importo gara (colonna importo_complessivo_gara)
-- [x] togliere il filtro sulla percentuale finanziamento
-
 ## To do - UI 
 - [ ] ALTRA PAGINA grafico con possibilità di scelta variabile master + dimensione figlia --> radar chart con tra le variabili (i) settore (ii) descrizione natura (iii) tipologia--> "altro"
 - [ ] COSA SCRIVERE nel front-end? 
 - [x] tabella riassuntiva filtri impostati
-- [ ] il bar chart deve dare valori % -> quanti CIG su una missione ha una regione in percentuale rispetto al numero di cig assoluto per quella regione?
+- [x] il bar chart deve dare valori % -> quanti CIG su una missione ha una regione in percentuale rispetto al numero di cig assoluto per quella regione?
+- [ ] inserire valori distinct **pesati** per la percentuale dei CIG
+- [x] fai visualizzare tutto il bar chart (no best/worst) -> NO TABs --> ordina il barchart sul distinct pesato
 
 ## To do - Performance
 - [x] file parquet anziché .json e .xlsx
