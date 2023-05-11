@@ -1,29 +1,33 @@
-## Dati Da Visualizzare
-* misure premiali
-* quota femminile
-* quota giovanile 
-* missioni = M1-M6 della colonna "NOME_TEMATICA"
-* regione/provincia associate alle quote
-* tematica
-* settore/sottosettore intervento --> https://plotly.com/python/radar-chart/
-* anno decisione
-* importo lavori? vs finanziamento?
-* totale CIG e totale CUP (bisogna andare in distinct?)
+# Period Think Tank
+![alt text](assets/period_logo.png)
 
-## To do - UI 
-- [ ] ALTRA PAGINA grafico con possibilità di scelta variabile master + dimensione figlia --> radar chart con tra le variabili (i) settore (ii) descrizione natura (iii) tipologia--> "altro"
-- [ ] COSA SCRIVERE nel front-end? 
-- [x] tabella riassuntiva filtri impostati
-- [x] il bar chart deve dare valori % -> quanti CIG su una missione ha una regione in percentuale rispetto al numero di cig assoluto per quella regione?
-- [ ] inserire valori distinct **pesati** per la percentuale dei CIG
-- [x] fai visualizzare tutto il bar chart (no best/worst) -> NO TABs --> ordina il barchart sul distinct pesato
+## PNRR Data Monitoring App
+App per la visualizzazione e l'analisi dei dati aperti riguardanti il PNRR provenienti da OpenPNRR, ANAC e OpenCUP, 
+e rielaborati da [Period Think Tank](https://www.thinktankperiod.org/), associazione femminista che promuove l'equità di genere attraverso un approccio femminista ai dati.  
 
-## To do - Performance
-- [x] file parquet anziché .json e .xlsx
-- [ ] verificare cosa può essere messo in cache
+Lo scopo dell'app è di indagare la presenza e la distribuzioni sul territorio e sulle missioni, 
+delle quote occupazionali minime o misure premiali per donne e giovani nei bandi di gara emessi.  
 
-## Esempi domande:
-1. solo alcuni settori hanno premialità? 
-2. come si incrociano le premialità sulle provincie? 
-3. misure di intervento (M1-M6 come categorie)
-4. vorrei vedere la combo flag premialità, regione=EmiliaRomagna e distribuzione delle province/settori
+### Fonti dati:
+* [OpenPNRR](https://openpnrr.it/)
+* [OpenCUP](https://www.opencup.gov.it/portale/web/opencup/opendata)
+* [ANAC](https://pnrr.datibenecomune.it/fonti/anac/)     
+
+Le informazioni geografiche sono state ottenute dal merge tra CIG e CUP. La realazione tra questi due codici è "molti a molti", ovvero un CIG può essere associato a più CUP e viceversa.
+Poichè non sono disponibili le informazioni sulla distribuzione dell’importo economico e su differenti comuni per i CUP associati, si sono considerati i CIG in conteggio distinto.  
+
+I valori mostrati sono valori percentuali, si confronta il totale dei cig con l'attributo mostrato (misure premiali, quote>30%) ecc, 
+sul totale dei CIG per quel raggruppamento.
+
+### Note sui Filtri:
+* I filtri impattano su tutti i grafici.
+* I grafici sulla presenza di misure premiali e sulle quote femminili/giovanili mostreranno sempre i dati filtrati per queste caratteristiche.
+* In fondo alla pagina è possibile visualizzare il riepilogo dei filtri selezionati
+* Possibilità di esportare il dataset in formato csv tramite la app.
+
+#### Note degli autori
+L'applicativo mostrato è realizzato in [Streamlit](https://streamlit.io/), quindi il nostro tool di sviluppo è principalmente Python.    
+Per utilizzare la App anche in locale, clonare la repository, installare il virtual environment con le librerie in ```requirements.txt```.
+In seguito, da terminale e con l'ambiente virtuale attivo, eseguire il comando  
+```streamlit run App.py```.  
+Pull request da altri branch sul principale verranno valutate e integrate. L'apertura di issue per proposte di miglioramento sono ben accette.
