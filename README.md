@@ -10,7 +10,7 @@ delle quote occupazionali minime o misure premiali per donne e giovani nei bandi
 
 ### Fonti dati:
 * [OpenPNRR](https://openpnrr.it/)
-* [OpenCUP] (https://www.opencup.gov.it/portale/web/opencup/opendata)
+* [OpenCUP](https://www.opencup.gov.it/portale/web/opencup/opendata)
 * [ANAC](https://pnrr.datibenecomune.it/fonti/anac/)     
 
 Le informazioni geografiche sono state ottenute dal merge tra CIG e CUP. La realazione tra questi due codici è "molti a molti", ovvero un CIG può essere associato a più CUP e viceversa.
@@ -26,7 +26,8 @@ sul totale dei CIG per quel raggruppamento.
 * Possibilità di esportare il dataset in formato csv tramite la app.
 
 #### Note degli autori
-L'applicativo mostrato è realizzato in [Streamlit](https://streamlit.io/), quindi il nostro tool di sviluppo è principalmente Python.  
+L'applicativo mostrato è realizzato in [Streamlit](https://streamlit.io/), quindi il nostro tool di sviluppo è principalmente Python.    
 Per utilizzare la App anche in locale, clonare la repository, installare il virtual environment con le librerie in ```requirements.txt```.
-In seguito, da terminale e con l'ambiente virtuale attivo, eseguire il comando ```streamlit run App.py```
+In seguito, da terminale e con l'ambiente virtuale attivo, eseguire il comando  
+```streamlit run App.py```.  
 Pull request da altri branch sul principale verranno valutate e integrate. L'apertura di issue per proposte di miglioramento sono ben accette.
