@@ -5,6 +5,8 @@
 App per la visualizzazione e l'analisi dei dati aperti riguardanti il PNRR provenienti da OpenPNRR, ANAC e OpenCUP, 
 e rielaborati da [Period Think Tank](https://www.thinktankperiod.org/), associazione femminista che promuove l'equità di genere attraverso un approccio femminista ai dati.  
 
+La App è accessibile da questo [link](https://periodthinktank-analisi-dati-pnrr-app-6tk6o2.streamlit.app/).  
+
 Lo scopo dell'app è di indagare la presenza e la distribuzioni sul territorio e sulle missioni, 
 delle quote occupazionali minime o misure premiali per donne e giovani nei bandi di gara emessi.  
 
