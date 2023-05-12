@@ -14,7 +14,7 @@ st.header("PNRR Data Monitoring App")
 ### INFO SUI DATI VISUALIZZATI ###
 st.markdown(
     """
-        App per la visualizzazione e l'analisi dei dati aperti riguardanti il PNRR provenienti da OpenPNRR, ANAC e OpenCUP, 
+        App per la visualizzazione e l'analisi dei dati aperti riguardanti i bandi di gara finanziati dal PNRR provenienti da OpenPNRR, ANAC e OpenCUP, 
         e rielaborati da [Period Think Tank](https://www.thinktankperiod.org/), associazione femminista che promuove l'equità di genere attraverso un approccio femminista ai dati.  
 
         Lo scopo dell'app è di indagare la presenza e la distribuzioni sul territorio e sulle missioni, 
@@ -70,7 +70,6 @@ st.session_state["data_charts"] = st.session_state["data"]
 # geo-data
 st.session_state["province"] = fetch_geojson(path="data/geojson_province_IT.json")
 
-
 ### SIDEBAR FILTRI ###
 st.sidebar.image("assets/period_logo.png", use_column_width=True)
 
@@ -104,12 +103,12 @@ st.session_state["filtro_importo_finanziato"] = st.sidebar.multiselect(
 
 st.session_state["filtro_regioni"] = st.sidebar.multiselect(
     label="Per quali **Regioni** vorresti monitorare i dati PNRR?",
-    options = st.session_state["data"].REGIONE.sort_values().unique()
+    options = st.session_state["data"].REGIONE.dropna().sort_values().unique()
 )
 
 st.session_state["filtro_province"] = st.sidebar.multiselect(
     label="Per quali **Province** vorresti monitorare i dati PNRR?",
-    options = st.session_state["data"].PROVINCIA.sort_values().unique()
+    options = st.session_state["data"].PROVINCIA.dropna().sort_values().unique()
 )
 
 st.session_state["filtro_comuni"] = st.sidebar.text_input(
@@ -118,7 +117,7 @@ st.session_state["filtro_comuni"] = st.sidebar.text_input(
 
 st.session_state["filtro_motivo_urgenza"] = st.sidebar.multiselect(
     label="Ti interessa monitorare un **motivo di urgenza** specifico?",
-    options = st.session_state["data"].MOTIVO_URGENZA.sort_values().unique()
+    options = st.session_state["data"].MOTIVO_URGENZA.sort_values().unique(),
 )
 
 st.session_state["filtro_esito"] = st.sidebar.multiselect(
@@ -126,6 +125,23 @@ st.session_state["filtro_esito"] = st.sidebar.multiselect(
     options = st.session_state["data"].ESITO.sort_values().unique()
 )
 
+st.session_state["filters"] = {
+                        "flag_premiali":st.session_state["flag_premiali"],
+                        "flag_urgenza":st.session_state["flag_urgenza"],
+                        "filtro_quota_femminile":st.session_state["filtro_quota_femminile"],
+                        "filtro_quota_giovanile":st.session_state["filtro_quota_giovanile"],
+                        "filtro_missioni":st.session_state["filtro_missioni"],
+                        "filtro_importo":st.session_state["filtro_importo_finanziato"],
+                        "filtro_regioni":st.session_state["filtro_regioni"], 
+                        "filtro_province":st.session_state["filtro_province"],
+                        "filtro_comuni":st.session_state["filtro_comuni"],
+                        "filtro_motivo_urgenza":st.session_state["filtro_motivo_urgenza"],
+                        "filtro_esito":st.session_state["filtro_esito"]
+}
+
+if any(v=="None" for v in st.session_state["filters"].values()):
+    st.warning(body="Per visualizzare correttamente l'analisi, rimuovere '**None**' dai filtri",
+                icon="⚠️")
 
 ### MANIPOLAZIONE DATI ###
 ## mappa ##  
@@ -191,8 +207,8 @@ if st.session_state.filtro_esito:
 if st.session_state.filtro_importo_finanziato:
     st.session_state["data_charts"] = st.session_state["data_charts"][st.session_state["data_charts"].CLASSE_IMPORTO.isin(st.session_state["filtro_importo_finanziato"])]
 
-
 ### FINE APPLICAZIONI FILTRI ###
+
 st.info(
     f"Stai visualizzando un totale di {st.session_state.data.CIG.nunique()} CIG distribuiti su {st.session_state.data.CUP.nunique()} CUP e su {st.session_state.data.COMUNE.nunique()} Comuni", 
     icon="ℹ️"
@@ -445,20 +461,6 @@ with st.container():
 
 
 ### RECAP FILTRI IMPOSTATI ###
-st.session_state["filters"] = {
-                        "flag_premiali":st.session_state["flag_premiali"],
-                        "flag_urgenza":st.session_state["flag_urgenza"],
-                        "filtro_quota_femminile":st.session_state["filtro_quota_femminile"],
-                        "filtro_quota_giovanile":st.session_state["filtro_quota_giovanile"],
-                        "filtro_missioni":st.session_state["filtro_missioni"],
-                        "filtro_importo":st.session_state["filtro_importo_finanziato"],
-                        "filtro_regioni":st.session_state["filtro_regioni"], 
-                        "filtro_province":st.session_state["filtro_province"],
-                        "filtro_comuni":st.session_state["filtro_comuni"],
-                        "filtro_motivo_urgenza":st.session_state["filtro_motivo_urgenza"],
-                        "filtro_esito":st.session_state["filtro_esito"]
-}
-
 with st.expander("Espandi per visualizzare un riassunto dei filtri selezionati"):
     filter_df = pd.DataFrame.from_dict(st.session_state["filters"], orient="index", columns=["Value"])
     st.dataframe(data=filter_df, use_container_width=True)
