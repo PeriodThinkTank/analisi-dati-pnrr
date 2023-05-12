@@ -20,6 +20,10 @@ st.markdown(
         Lo scopo dell'app è di indagare la presenza e la distribuzioni sul territorio e sulle missioni, 
         delle quote occupazionali minime o misure premiali per donne e giovani nei bandi di gara emessi.  
 
+        **ATTENZIONE**  
+        questa è una prima versione della nostra App, pertanto qualsiasi segnalazione bug o problematiche è caldamente incoraggiata.
+        Per segnalazioni scrivere a info@thinktankperiod.org.
+
         #### Fonti dati:
         * [OpenPNRR](https://openpnrr.it/)
         * [OpenCUP](https://www.opencup.gov.it/portale/web/opencup/opendata)
