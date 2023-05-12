@@ -31,6 +31,7 @@ st.markdown(
 
         Le informazioni geografiche sono state ottenute dal merge tra CIG e CUP. La realazione tra questi due codici è "molti a molti", ovvero un CIG può essere associato a più CUP e viceversa.
         Poichè non sono disponibili le informazioni sulla distribuzione dell’importo economico e su differenti comuni per i CUP associati, si sono considerati i CIG in conteggio distinto.  
+        Per avere informazioni sui progetti collegati ai bandi di gara è sufficiente utilizzare il codice CUP all'interno della banca dati di OpenCup. 
 
         I valori mostrati sono valori percentuali, si confronta il totale dei cig con l'attributo mostrato (misure premiali, quote>30%) ecc, 
         sul totale dei CIG per quel raggruppamento. I grafici a torta rappresentano la distribuzione dei CIG per regione sul totale dei CIG.  
