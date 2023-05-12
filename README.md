@@ -18,8 +18,9 @@ delle quote occupazionali minime o misure premiali per donne e giovani nei bandi
 Le informazioni geografiche sono state ottenute dal merge tra CIG e CUP. La realazione tra questi due codici è "molti a molti", ovvero un CIG può essere associato a più CUP e viceversa.
 Poichè non sono disponibili le informazioni sulla distribuzione dell’importo economico e su differenti comuni per i CUP associati, si sono considerati i CIG in conteggio distinto.  
 
-I valori mostrati sono valori percentuali, si confronta il totale dei cig con l'attributo mostrato (misure premiali, quote>30%) ecc, 
-sul totale dei CIG per quel raggruppamento.
+I valori mostrati sono valori percentuali, si confronta il totale dei cig con l'attributo mostrato (misure premiali, quote>30%) ecc, sul totale dei CIG per quel raggruppamento.  
+I grafici a torta rappresentano la distribuzione dei CIG per regione sul totale dei CIG.  
+I grafici a barre rappresentano la percentuale dei CIG con premialità (quota femminile >30%, quota giovanile>30%..) sul totale dei CIG per Regione/Missione nel primo tab, e per Missione/Componente nel secondo tab.  
 
 ### Note sui Filtri:
 * I filtri impattano su tutti i grafici.
