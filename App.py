@@ -27,7 +27,8 @@ st.markdown(
         #### Fonti dati:
         * [OpenPNRR](https://openpnrr.it/)
         * [OpenCUP](https://www.opencup.gov.it/portale/web/opencup/opendata)
-        * [ANAC](https://pnrr.datibenecomune.it/fonti/anac/)     
+        * [ANAC](https://pnrr.datibenecomune.it/fonti/anac/)
+        * [Guida ai dati aperti sul PNRR](https://pnrr.datibenecomune.it/)     
 
         Le informazioni geografiche sono state ottenute dal merge tra CIG e CUP. La realazione tra questi due codici è "molti a molti", ovvero un CIG può essere associato a più CUP e viceversa.
         Poichè non sono disponibili le informazioni sulla distribuzione dell’importo economico e su differenti comuni per i CUP associati, si sono considerati i CIG in conteggio distinto.  
