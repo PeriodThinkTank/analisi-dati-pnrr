@@ -124,11 +124,13 @@ st.session_state["filtro_comuni"] = st.sidebar.text_input(
 st.session_state["filtro_motivo_urgenza"] = st.sidebar.multiselect(
     label="Ti interessa monitorare un **motivo di urgenza** specifico?",
     options = st.session_state["data"].MOTIVO_URGENZA.sort_values().unique(),
+    default=[]
 )
 
 st.session_state["filtro_esito"] = st.sidebar.multiselect(
     label="Ti interessa monitorare bandi con un **esito** specifico?",
-    options = st.session_state["data"].ESITO.sort_values().unique()
+    options = st.session_state["data"].ESITO.sort_values().unique(),
+    default=[]
 )
 
 st.session_state["filters"] = {
