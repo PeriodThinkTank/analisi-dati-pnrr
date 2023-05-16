@@ -149,8 +149,7 @@ if any(v=="None" for v in st.session_state["filters"].values()):
     st.warning(body="Per visualizzare correttamente l'analisi, rimuovere '**None**' dai filtri",
                 icon="⚠️")
 
-### MANIPOLAZIONE DATI ###
-## mappa ##  
+### MANIPOLAZIONE DATI ### 
 if st.session_state["flag_premiali"]:
     st.session_state["data"] = st.session_state["data"].query("FLAG_MISURE_PREMIALI=='S'")
 
