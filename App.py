@@ -9,7 +9,7 @@ st.set_page_config(
     page_title="Period PNRR Monitoring App",
     page_icon="🩸",
 )
-st.title("🩸 :red[Period] Think Tank")
+st.title("🩸 :red[Period] Think Tank!")
 st.header("PNRR Data Monitoring App")
 ### INFO SUI DATI VISUALIZZATI ###
 st.markdown(
