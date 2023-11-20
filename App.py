@@ -14,22 +14,29 @@ st.header("PNRR Data Monitoring App")
 ### INFO SUI DATI VISUALIZZATI ###
 st.markdown(
     """
-        App per la visualizzazione e l'analisi dei dati aperti riguardanti il PNRR provenienti da OpenPNRR, ANAC e OpenCUP, 
+        App per la visualizzazione e l'analisi dei dati aperti riguardanti i bandi di gara finanziati dal PNRR provenienti da OpenPNRR, ANAC e OpenCUP, 
         e rielaborati da [Period Think Tank](https://www.thinktankperiod.org/), associazione femminista che promuove l'equità di genere attraverso un approccio femminista ai dati.  
 
         Lo scopo dell'app è di indagare la presenza e la distribuzioni sul territorio e sulle missioni, 
         delle quote occupazionali minime o misure premiali per donne e giovani nei bandi di gara emessi.  
 
+        **ATTENZIONE**  
+        questa è una prima versione della nostra App, pertanto qualsiasi segnalazione bug o problematiche è caldamente incoraggiata.
+        Per segnalazioni scrivere a info@thinktankperiod.org.
+
         #### Fonti dati:
         * [OpenPNRR](https://openpnrr.it/)
         * [OpenCUP](https://www.opencup.gov.it/portale/web/opencup/opendata)
-        * [ANAC](https://pnrr.datibenecomune.it/fonti/anac/)     
+        * [ANAC](https://pnrr.datibenecomune.it/fonti/anac/)
+        * [Guida ai dati aperti sul PNRR](https://pnrr.datibenecomune.it/)     
 
         Le informazioni geografiche sono state ottenute dal merge tra CIG e CUP. La realazione tra questi due codici è "molti a molti", ovvero un CIG può essere associato a più CUP e viceversa.
         Poichè non sono disponibili le informazioni sulla distribuzione dell’importo economico e su differenti comuni per i CUP associati, si sono considerati i CIG in conteggio distinto.  
+        Per avere informazioni sui progetti collegati ai bandi di gara è sufficiente utilizzare il codice CUP all'interno della banca dati di OpenCup. 
 
         I valori mostrati sono valori percentuali, si confronta il totale dei cig con l'attributo mostrato (misure premiali, quote>30%) ecc, 
-        sul totale dei CIG per quel raggruppamento.
+        sul totale dei CIG per quel raggruppamento. I grafici a torta rappresentano la distribuzione dei CIG per regione sul totale dei CIG.  
+        I grafici a barre rappresentano la percentuale dei CIG con premialità (quota femminile >30%, quota giovanile>30%..) sul totale dei CIG per Regione/Missione nel primo tab, e per Missione/Componente nel secondo tab. 
 
         #### Note sui Filtri:
         * I filtri impattano su tutti i grafici.
@@ -69,7 +76,6 @@ st.session_state["data_charts"] = st.session_state["data"]
 # geo-data
 st.session_state["province"] = fetch_geojson(path="data/geojson_province_IT.json")
 
-
 ### SIDEBAR FILTRI ###
 st.sidebar.image("assets/period_logo.png", use_column_width=True)
 
@@ -103,12 +109,12 @@ st.session_state["filtro_importo_finanziato"] = st.sidebar.multiselect(
 
 st.session_state["filtro_regioni"] = st.sidebar.multiselect(
     label="Per quali **Regioni** vorresti monitorare i dati PNRR?",
-    options = st.session_state["data"].REGIONE.sort_values().unique()
+    options = st.session_state["data"].REGIONE.dropna().sort_values().unique()
 )
 
 st.session_state["filtro_province"] = st.sidebar.multiselect(
     label="Per quali **Province** vorresti monitorare i dati PNRR?",
-    options = st.session_state["data"].PROVINCIA.sort_values().unique()
+    options = st.session_state["data"].PROVINCIA.dropna().sort_values().unique()
 )
 
 st.session_state["filtro_comuni"] = st.sidebar.text_input(
@@ -117,17 +123,35 @@ st.session_state["filtro_comuni"] = st.sidebar.text_input(
 
 st.session_state["filtro_motivo_urgenza"] = st.sidebar.multiselect(
     label="Ti interessa monitorare un **motivo di urgenza** specifico?",
-    options = st.session_state["data"].MOTIVO_URGENZA.sort_values().unique()
+    options = st.session_state["data"].MOTIVO_URGENZA.sort_values().unique(),
+    default=[]
 )
 
 st.session_state["filtro_esito"] = st.sidebar.multiselect(
     label="Ti interessa monitorare bandi con un **esito** specifico?",
-    options = st.session_state["data"].ESITO.sort_values().unique()
+    options = st.session_state["data"].ESITO.sort_values().unique(),
+    default=[]
 )
 
+st.session_state["filters"] = {
+                        "flag_premiali":st.session_state["flag_premiali"],
+                        "flag_urgenza":st.session_state["flag_urgenza"],
+                        "filtro_quota_femminile":st.session_state["filtro_quota_femminile"],
+                        "filtro_quota_giovanile":st.session_state["filtro_quota_giovanile"],
+                        "filtro_missioni":st.session_state["filtro_missioni"],
+                        "filtro_importo":st.session_state["filtro_importo_finanziato"],
+                        "filtro_regioni":st.session_state["filtro_regioni"], 
+                        "filtro_province":st.session_state["filtro_province"],
+                        "filtro_comuni":st.session_state["filtro_comuni"],
+                        "filtro_motivo_urgenza":st.session_state["filtro_motivo_urgenza"],
+                        "filtro_esito":st.session_state["filtro_esito"]
+}
 
-### MANIPOLAZIONE DATI ###
-## mappa ##  
+if any(v=="None" for v in st.session_state["filters"].values()):
+    st.warning(body="Per visualizzare correttamente l'analisi, rimuovere '**None**' dai filtri",
+                icon="⚠️")
+
+### MANIPOLAZIONE DATI ### 
 if st.session_state["flag_premiali"]:
     st.session_state["data"] = st.session_state["data"].query("FLAG_MISURE_PREMIALI=='S'")
 
@@ -190,8 +214,8 @@ if st.session_state.filtro_esito:
 if st.session_state.filtro_importo_finanziato:
     st.session_state["data_charts"] = st.session_state["data_charts"][st.session_state["data_charts"].CLASSE_IMPORTO.isin(st.session_state["filtro_importo_finanziato"])]
 
-
 ### FINE APPLICAZIONI FILTRI ###
+
 st.info(
     f"Stai visualizzando un totale di {st.session_state.data.CIG.nunique()} CIG distribuiti su {st.session_state.data.CUP.nunique()} CUP e su {st.session_state.data.COMUNE.nunique()} Comuni", 
     icon="ℹ️"
@@ -444,20 +468,6 @@ with st.container():
 
 
 ### RECAP FILTRI IMPOSTATI ###
-st.session_state["filters"] = {
-                        "flag_premiali":st.session_state["flag_premiali"],
-                        "flag_urgenza":st.session_state["flag_urgenza"],
-                        "filtro_quota_femminile":st.session_state["filtro_quota_femminile"],
-                        "filtro_quota_giovanile":st.session_state["filtro_quota_giovanile"],
-                        "filtro_missioni":st.session_state["filtro_missioni"],
-                        "filtro_importo":st.session_state["filtro_importo_finanziato"],
-                        "filtro_regioni":st.session_state["filtro_regioni"], 
-                        "filtro_province":st.session_state["filtro_province"],
-                        "filtro_comuni":st.session_state["filtro_comuni"],
-                        "filtro_motivo_urgenza":st.session_state["filtro_motivo_urgenza"],
-                        "filtro_esito":st.session_state["filtro_esito"]
-}
-
 with st.expander("Espandi per visualizzare un riassunto dei filtri selezionati"):
     filter_df = pd.DataFrame.from_dict(st.session_state["filters"], orient="index", columns=["Value"])
     st.dataframe(data=filter_df, use_container_width=True)
