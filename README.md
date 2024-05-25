@@ -1,11 +1,9 @@
 # Period Think Tank
-![alt text](assets/period_logo.png)
-
-
 # IMPORTANTE: NUOVA VERSIONE APP 
 ### Marzo 2024
 Ciao! Abbiamo migrato la App di monitoraggio, con **dati aggiornati** da Streamlit alla nostra dashboard in Tableau.  
 La puoi trovare a questo [link](https://public.tableau.com/app/profile/period.thinktank/viz/webapp-attempt_newbase/Home)!
+![alt text](assets/period_logo.png)
 
 
 ## PNRR Data Monitoring App
