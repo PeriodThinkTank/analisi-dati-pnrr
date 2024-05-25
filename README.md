@@ -1,8 +1,15 @@
 # Period Think Tank
 ![alt text](assets/period_logo.png)
 
+
+# IMPORTANTE: NUOVA VERSIONE APP 
+### Marzo 2024
+Ciao! Abbiamo migrato la App di monitoraggio, con **dati aggiornati** da Streamlit alla nostra dashboard in Tableau.  
+La puoi trovare a questo [link](https://public.tableau.com/app/profile/period.thinktank/viz/webapp-attempt_newbase/Home)!
+
+
 ## PNRR Data Monitoring App
-App per la visualizzazione e l'analisi dei dati aperti riguardanti il PNRR provenienti da OpenPNRR, ANAC e OpenCUP, 
+**Versione non più manutenuta** della App per la visualizzazione e l'analisi dei dati aperti riguardanti il PNRR provenienti da OpenPNRR, ANAC e OpenCUP, 
 e rielaborati da [Period Think Tank](https://www.thinktankperiod.org/), associazione femminista che promuove l'equità di genere attraverso un approccio femminista ai dati.  
 
 La App è accessibile da questo [link](https://periodthinktank-analisi-dati-pnrr-app-6tk6o2.streamlit.app/).  
